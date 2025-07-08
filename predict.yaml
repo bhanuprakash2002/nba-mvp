@@ -1,0 +1,153 @@
+name: predict
+
+env:
+  LOG_LEVEL: INFO
+  SEASON_IS_OVER: true  # Skip prediction/explanation if true
+
+on:
+  schedule:
+    - cron: '0 12 * * MON'  # Weekly on Monday at 12:00
+  workflow_dispatch:        # Manual run option
+
+jobs:
+  make-predictions:
+    if: env.SEASON_IS_OVER != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup timezone to Europe/Paris
+        uses: zcong1993/setup-timezone@master
+        with:
+          timezone: Europe/Paris
+
+      - name: Check out to repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Download features from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: features.json
+          workflow: renew.yaml
+          path: ./data/
+          search_artifacts: true
+
+      - name: Download model from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: model.joblib
+          workflow: renew.yaml
+          path: ./data/
+          search_artifacts: true
+
+      - name: Download history from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: history-2025.csv
+          workflow: predict.yaml
+          path: ./data/
+          search_artifacts: true
+          if_no_artifact_found: warn
+
+      - name: Install dependencies from Pipfile
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pipenv
+          pipenv install --deploy
+
+      - name: Run the CLI command to download data for season 2025
+        run: |
+          pipenv run python . download --season 2024 2025
+
+      - name: Run the CLI command to predict model
+        run: |
+          pipenv run python . predict
+
+      - name: Upload predictions as artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: predictions-2025.csv
+          path: ./data/predictions-2025.csv
+          retention-days: 10
+
+      - name: Upload history as artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: history-2025.csv
+          path: ./data/history-2025.csv
+          retention-days: 10
+
+      - name: Upload model input dataset as artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: model_input.csv
+          path: ./data/model_input.csv
+          retention-days: 10
+
+  explain-predictions:
+    if: env.SEASON_IS_OVER != 'true'
+    needs: make-predictions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup timezone to Europe/Paris
+        uses: zcong1993/setup-timezone@master
+        with:
+          timezone: Europe/Paris
+
+      - name: Check out to repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Download model input from artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: model_input.csv
+          path: ./data/
+
+      - name: Download predictions from artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: predictions-2025.csv
+          path: ./data/
+
+      - name: Download model from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: model.joblib
+          workflow: renew.yaml
+          path: ./data/
+          search_artifacts: true
+
+      - name: Install dependencies from Pipfile
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade pipenv
+          pipenv install --deploy
+
+      - name: Run the CLI command to explain predictions
+        run: |
+          pipenv run python . explain
+
+      - name: Upload SHAP values dataset as artifact
+        uses: actions/upload-artifact@v4
+        with: 
+          name: shap_values-2025.csv
+          path: ./data/shap_values-2025.csv
+          retention-days: 10
+
+  clean-artifacts:
+    if: env.SEASON_IS_OVER != 'true'
+    needs: explain-predictions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete model input from artifacts
+        uses: geekyeggo/delete-artifact@v4
+        with:
+          name: model_input.csv

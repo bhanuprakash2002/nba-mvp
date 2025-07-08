@@ -1,0 +1,127 @@
+name: renew
+env:
+  LOG_LEVEL: INFO
+on:
+  schedule:
+    - cron: '0 12 * * MON'  # At 12:00 on Mondays
+  workflow_dispatch:
+
+jobs:
+  renew-model:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download model from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: model.joblib
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload model as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: model.joblib
+          path: ./model.joblib
+          retention-days: 10
+
+  renew-model-performances:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download model performances from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: performances.csv
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload model performances as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: performances.csv
+          path: ./performances.csv
+          retention-days: 10
+
+  renew-model-features:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download features from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: features.json
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload features as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: features.json
+          path: ./features.json
+          retention-days: 10
+
+  renew-model-input:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download model input from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: model_input.csv
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload model input as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: model_input.csv
+          path: ./model_input.csv
+          retention-days: 10
+
+  renew-predictions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download predictions from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: predictions-2025.csv
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload predictions as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictions-2025.csv
+          path: ./predictions-2025.csv
+          retention-days: 10
+
+  renew-shap-values:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download shap values from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: shap_values-2025.csv
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload shap values as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: shap_values-2025.csv
+          path: ./shap_values-2025.csv
+          retention-days: 10
+
+  renew-predictions-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download predictions history from artifact
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          name: history-2025.csv
+          workflow: renew.yaml
+          path: ./
+          search_artifacts: true
+      - name: Upload history as artifact for 10 more days
+        uses: actions/upload-artifact@v4
+        with:
+          name: history-2025.csv
+          path: ./history-2025.csv
+          retention-days: 10
